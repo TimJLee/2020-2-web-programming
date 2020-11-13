@@ -9,7 +9,7 @@ body {
   width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis; /* 1 */
+  text-overflow: ellipsis; 
 }
 
 .board-table {
@@ -20,8 +20,12 @@ body {
 }
 
 .post-body{
-  white-space: pre-line; /* 2 */
+  white-space: pre-line; 
 }
 .post-info{
   font-size: 0.8em;
+}
+
+.user-form {
+  width: 400px;
 }
