@@ -4,13 +4,27 @@ var Post = require('../models/Post');
 var util = require('../util');
 
   // Index
-router.get('/', function(req, res){
-    Post.find({})
-    .populate('author')                  
-    .sort('-createdAt')             
-    .exec(function(err, posts){    
-      if(err) return res.json(err);
-      res.render('posts/index', {posts:posts});
+  router.get('/', async function(req, res){ // 1
+    var page = Math.max(1, parseInt(req.query.page));   // 2
+    var limit = Math.max(1, parseInt(req.query.limit)); // 2
+    page = !isNaN(page)?page:1;                         // 3
+    limit = !isNaN(limit)?limit:10;                     // 3
+  
+    var skip = (page-1)*limit; // 4
+    var count = await Post.countDocuments({}); // 5
+    var maxPage = Math.ceil(count/limit); // 6
+    var posts = await Post.find({}) // 7
+      .populate('author')
+      .sort('-createdAt')
+      .skip(skip)   // 8
+      .limit(limit) // 8
+      .exec();
+  
+    res.render('posts/index', {
+      posts:posts,
+      currentPage:page, // 9
+      maxPage:maxPage,  // 9
+      limit:limit       // 9
     });
   });
   
@@ -28,9 +42,9 @@ router.get('/', function(req, res){
       if(err){
         req.flash('post', req.body);
         req.flash('errors', util.parseError(err));
-        return res.redirect('/posts/new');
+        return res.redirect('/posts/new'+res.locals.getPostQueryString());
       }
-      res.redirect('/posts');
+      res.redirect('/posts'+res.locals.getPostQueryString(false, {page:1}));
     });
   });
   
@@ -67,9 +81,9 @@ router.get('/', function(req, res){
       if(err){
         req.flash('post', req.body);
         req.flash('errors', util.parseError(err));
-        return res.redirect('/posts/'+req.params.id+'/edit');
+        return res.redirect('/posts/'+req.params.id+'/edit'+res.locals.getPostQueryString());
       }
-      res.redirect('/posts/'+req.params.id);
+      res.redirect('/posts/'+req.params.id+res.locals.getPostQueryString());
     });
   });
   
@@ -78,7 +92,7 @@ router.get('/', function(req, res){
   router.delete('/:id',util.isLoggedin, checkPermission, function(req, res){
     Post.deleteOne({_id:req.params.id}, function(err){
       if(err) return res.json(err);
-      res.redirect('/posts');
+      res.redirect('/posts'+res.locals.getPostQueryString());
     });
   });
   
