@@ -29,10 +29,14 @@
           <% posts.forEach(function(post) { %>
             <tr>
               <td>
-                <a href="/posts/<%= post._id %><%= getPostQueryString() %>"><div class="ellipsis"><%= post.title %></div></a>
+                <a href="/posts/<%= post._id %><%= getPostQueryString() %>">
+                  <div data-search-highlight="title" class="ellipsis"><%= post.title %></div> 
+                </a>
               </td>
               <td class="author">
-                <div class="ellipsis"><%= post.author ? post.author.username : "" %></div>
+                <a href="/posts<%= getPostQueryString(false, { searchType:'author', searchText:'post.author.username' }) %>">
+                  <div data-search-highlight="author" class="ellipsis"><%= post.author ? post.author.username : "" %></div>                
+                </a>
               </td>
               <td class="date">
                 <span data-date="<%= post.createdAt %>"></span> <!-- 1 -->
@@ -74,7 +78,7 @@
         </nav>
       </div>
 
-      <form action="/posts" method="get"> <!-- 4 -->
+      <form action="/posts" method="get" class="post-index-tool"> <!-- 4 -->
         <div class="form-row">
 
           <div class="form-group col-3">
@@ -84,6 +88,22 @@
               <option value="10" <%= limit==10?'selected':'' %>>10 posts</option>
               <option value="20" <%= limit==20?'selected':'' %>>20 posts</option>
             </select>
+          </div>
+
+          <div class="form-group col-9"> <!-- 2 -->
+            <label>Search</label>
+            <div class="input-group">
+              <select name="searchType" class="custom-select">
+                <option value="title,body" <%= searchType=='title,body'?'selected':'' %>>제목, 내용</option>
+                <option value="title" <%= searchType=='title'?'selected':'' %>>제목</option>
+                <option value="body" <%= searchType=='body'?'selected':'' %>>내용</option>
+                <option value="author" <%= searchType=='author'?'selected':'' %>>작성자</option> 
+              </select>
+              <input minLength="3" type="text" name="searchText" value="<%= searchText %>">
+              <div class="input-group-append">
+                <button class="btn btn-outline-primary" type="submit">search</button>
+              </div>
+            </div>
           </div>
 
         </div>

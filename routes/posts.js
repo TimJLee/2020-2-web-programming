@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var Post = require('../models/Post');
+var User = require('../models/User');
 var util = require('../util');
 
   // Index
@@ -8,23 +9,31 @@ var util = require('../util');
     var page = Math.max(1, parseInt(req.query.page));   // 2
     var limit = Math.max(1, parseInt(req.query.limit)); // 2
     page = !isNaN(page)?page:1;                         // 3
-    limit = !isNaN(limit)?limit:10;                     // 3
-  
-    var skip = (page-1)*limit; // 4
-    var count = await Post.countDocuments({}); // 5
-    var maxPage = Math.ceil(count/limit); // 6
-    var posts = await Post.find({}) // 7
-      .populate('author')
-      .sort('-createdAt')
-      .skip(skip)   // 8
-      .limit(limit) // 8
-      .exec();
-  
+    limit = !isNaN(limit)?limit:10;
+
+    var skip = (page-1)*limit;
+    var maxPage = 0;
+    var searchQuery = await createSearchQuery(req.query);
+    var posts = [];
+
+    if(searchQuery) {
+      var count = await Post.countDocuments(searchQuery);
+      maxPage = Math.ceil(count/limit);
+      posts = await Post.find(searchQuery)
+        .populate('author')
+        .sort('-createdAt')
+        .skip(skip)
+        .limit(limit)
+        .exec();
+    }
+
     res.render('posts/index', {
       posts:posts,
       currentPage:page, // 9
       maxPage:maxPage,  // 9
-      limit:limit       // 9
+      limit:limit,       // 9
+      searchType:req.query.searchType, 
+      searchText:req.query.searchText  
     });
   });
   
@@ -44,7 +53,7 @@ var util = require('../util');
         req.flash('errors', util.parseError(err));
         return res.redirect('/posts/new'+res.locals.getPostQueryString());
       }
-      res.redirect('/posts'+res.locals.getPostQueryString(false, {page:1}));
+      res.redirect('/posts'+res.locals.getPostQueryString(false, { page:1, searchText:'' }));
     });
   });
   
@@ -106,4 +115,36 @@ function checkPermission(req, res, next){
 
     next();
   });
+}
+
+async function createSearchQuery(queries){ // 4
+  var searchQuery = {};
+  if(queries.searchType && queries.searchText && queries.searchText.length >= 3){
+    var searchTypes = queries.searchType.toLowerCase().split(',');
+    var postQueries = [];
+    if(searchTypes.indexOf('title')>=0){
+      postQueries.push({ title: { $regex: new RegExp(queries.searchText, 'i') } });
+    }
+    if(searchTypes.indexOf('body')>=0){
+      postQueries.push({ body: { $regex: new RegExp(queries.searchText, 'i') } });
+    }
+    if(postQueries.length > 0) searchQuery = {$or:postQueries};
+
+    if(searchTypes.indexOf('author!')>=0){ // 2-1
+      var user = await User.findOne({ username: queries.searchText }).exec();
+      if(user) postQueries.push({author:user._id});
+    }
+    else if(searchTypes.indexOf('author')>=0){ // 2-2
+      var users = await User.find({ username: { $regex: new RegExp(queries.searchText, 'i') } }).exec();
+      var userIds = [];
+      for(var user of users){
+        userIds.push(user._id);
+      }
+      if(userIds.length>0) postQueries.push({author:{$in:userIds}});
+    }
+    if(postQueries.length>0) searchQuery = {$or:postQueries}; // 2-3
+    else searchQuery = null; 
+  }
+  
+  return searchQuery;
 }
