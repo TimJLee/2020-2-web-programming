@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 var Post = require('../models/Post');
 var User = require('../models/User');
+var Comment = require('../models/Comment');
 var util = require('../util');
 
   // Index
@@ -37,6 +38,23 @@ var util = require('../util');
     });
   });
   
+  // show
+  router.get('/:id', function(req, res){ // 2
+    var commentForm = req.flash('commentForm')[0] || {_id: null, form: {}};
+    var commentError = req.flash('commentError')[0] || { _id:null,  errors:{}};
+
+    Promise.all([
+        Post.findOne({_id:req.params.id}).populate({ path: 'author', select: 'username' }),
+        Comment.find({post:req.params.id}).sort('createdAt').populate({ path: 'author', select: 'username' })
+      ])
+      .then(([post, comments]) => {
+        res.render('posts/show', { post:post, comments:comments, commentForm:commentForm, commentError:commentError});
+      })
+      .catch((err) => {
+        console.log('err: ', err);
+        return res.json(err);
+      });
+  });
   // New
   router.get('/new',util.isLoggedin, function(req, res){
     var post = req.flash('post')[0] || {};

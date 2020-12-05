@@ -45,3 +45,18 @@ body {
 .highlighted {
   background-color: yellow;
 }
+
+.post-body,
+.comment-text {
+  white-space: pre-line;
+}
+
+.comment-edit,
+.comment-edit-enabled .comment-show {
+  display:none;
+}
+
+.comment-edit-enabled .comment-edit {
+  display:inherit;
+}
+
