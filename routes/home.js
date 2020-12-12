@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-var passport = require('../config/passport'); // 1
+var passport = require('../config/passport');
 
 // Home
 router.get('/', function(req, res){
@@ -9,7 +9,8 @@ router.get('/', function(req, res){
 router.get('/about', function(req, res){
   res.render('home/about');
 });
-// Login // 2
+
+// Login
 router.get('/login', function (req,res) {
   var username = req.flash('username')[0];
   var errors = req.flash('errors')[0] || {};
@@ -19,7 +20,7 @@ router.get('/login', function (req,res) {
   });
 });
 
-// Post Login // 3
+// Post Login
 router.post('/login',
   function(req,res,next){
     var errors = {};
@@ -48,7 +49,7 @@ router.post('/login',
   }
 ));
 
-// Logout // 4
+// Logout
 router.get('/logout', function(req, res) {
   req.logout();
   res.redirect('/');
